@@ -9,17 +9,21 @@ let timeoutid;
 let resultsP;
 let speedSlider;
 
-let totalDoors = 5;
+let totalDoors = 3;
 
-let stats = {
-  totalSwitchPlays: 0,
-  totalStayPlays: 0,
-  totalSwitchWins: 0,
-  totalStayWins: 0,
-};
+let stats;
 
 let autoMode = false;
 let autoButton;
+
+function clearStats() {
+  stats = {
+    totalSwitchPlays: 0,
+    totalStayPlays: 0,
+    totalSwitchWins: 0,
+    totalStayWins: 0,
+  };
+}
 
 function startOver() {
   clearTimeout(timeoutid);
@@ -44,8 +48,13 @@ function startOver() {
   }
 }
 
-function setup() {
-  noCanvas();
+function makeDoors() {
+  // clear array
+  for (let door of doors) {
+    door.remove();
+  }
+  doors.splice(0, doors.length);
+  console.log(doors);
 
   for (let i = 0; i < totalDoors; i++) {
     doors[i] = createDiv();
@@ -54,6 +63,12 @@ function setup() {
     doors[i].index = i;
     doors[i].mousePressed(pickDoor);
   }
+}
+
+function setup() {
+  noCanvas();
+  makeDoors();
+  clearStats();
 
   switchButton = createButton('switch');
   switchButton.mousePressed(playerSwitch);
@@ -79,12 +94,30 @@ function setup() {
   storedstats = getItem('Montey-Hall-stats');
   if (storedstats) {
     stats = storedstats;
-    displayStats();
   }
+  // I think good to always display the stats
+  displayStats();
 
   speedSlider = createSlider(20, 1000, 500, 1);
   speedSlider.hide();
   startOver();
+
+  const totalDoorSelect = createSelect();
+  // Arbitrary set of choices
+  totalDoorSelect.option(3);
+  totalDoorSelect.option(4);
+  totalDoorSelect.option(5);
+  totalDoorSelect.option(10);
+  totalDoorSelect.option(25);
+  totalDoorSelect.option(50);
+  totalDoorSelect.changed(function () {
+    totalDoors = Number(totalDoorSelect.value());
+    makeDoors();
+    clearStorage();
+    clearStats();
+    displayStats();
+    startOver();
+  });
 }
 
 function handleAuto() {
