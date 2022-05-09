@@ -4,6 +4,7 @@ let pickedDoor;
 let revealedDoor;
 let switchButton, stayButton, playAgain;
 let outcomeP;
+let timeoutid;
 
 let resultsP;
 
@@ -19,6 +20,7 @@ let autoButton;
 let delay = 5;
 
 function startOver() {
+  clearTimeout(timeoutid);
   for (let door of doors) {
     door.prize = "🐐";
     door.html(door.index + 1);
@@ -31,9 +33,7 @@ function startOver() {
   state = "PICK";
   outcomeP.html("Pick a Door!");
 
-  if (autoButton) autoButton.hide();
-
-  if (autoMode) setTimeout(pickDoor, delay);
+  if (autoMode) timeoutid = setTimeout(pickDoor, delay);
 }
 
 function setup() {
@@ -62,24 +62,33 @@ function setup() {
   playAgain.mousePressed(startOver);
   playAgain.hide();
   startOver();
-  autoButton = createButton("auto run");
-  autoButton.mousePressed(goAuto);
+
   resultsP = createElement("pre", "");
+
+  createElement("br");
+  autoButton = createButton("auto run");
+  autoButton.mousePressed(handleAuto);
 }
 
-function goAuto() {
+function handleAuto() {
+  autoMode = !autoMode;
+  if (autoMode) {
+    pickDoor();
+  } else {
+    autoButton.html("auto run");
+  }
   startOver();
-  autoMode = true;
-  pickDoor();
 }
 
 function pickDoor() {
-  autoButton.hide();
-
-  if (state == "PICK") {
+  if (state === "PICK") {
     state = "REVEAL";
-    if (autoMode) pickedDoor = random(doors);
-    else pickedDoor = this;
+    if (autoMode) {
+      pickedDoor = random(doors);
+      autoButton.html("stop autorun");
+    } else {
+      pickedDoor = this;
+    }
     pickedDoor.style("background-color", "#AAF");
     reveal();
   }
@@ -97,18 +106,17 @@ function reveal() {
   revealedDoor = random(options);
   revealedDoor.html(revealedDoor.prize);
 
-  if (!autoMode) switchButton.style("display", "inline");
-  if (!autoMode) stayButton.style("display", "inline");
-
-  if (autoMode) {
+  if (!autoMode) {
+    switchButton.style("display", "inline");
+    stayButton.style("display", "inline");
+    outcomeP.html("");
+  } else {
     if (random(1) < 0.5) {
-      setTimeout(playerSwitch, delay);
+      timeoutid = setTimeout(playerSwitch, delay);
     } else {
-      setTimeout(playerStay, delay);
+      timeoutid = setTimeout(playerStay, delay);
     }
   }
-
-  if (!autoMode) outcomeP.html("");
 }
 
 function playerSwitch() {
@@ -124,8 +132,8 @@ function playerSwitch() {
   }
   pickedDoor = newPick;
   if (autoMode) {
-      outcomeP.html("Switch!");
-    setTimeout(() => checkWin(true), delay);
+    outcomeP.html("Switch!");
+    timeoutid = setTimeout(() => checkWin(true), delay);
   } else {
     checkWin(true);
   }
@@ -134,8 +142,8 @@ function playerSwitch() {
 function playerStay() {
   totalStayPlays++;
   if (autoMode) {
-      outcomeP.html("Stay!");
-    setTimeout(() => checkWin(false), delay);
+    outcomeP.html("Stay!");
+    timeoutid = setTimeout(() => checkWin(false), delay);
   } else {
     checkWin(false);
   }
@@ -150,7 +158,7 @@ function checkWin(playerSwitch) {
     door.style("background-color", "#AAA");
   }
 
-  if (pickedDoor.prize == "🚂") {
+  if (pickedDoor.prize === "🚂") {
     outcomeP.html("You win!");
     pickedDoor.style("background-color", "#AFA");
 
@@ -166,8 +174,8 @@ function checkWin(playerSwitch) {
 
   let switchRate = nf((100 * totalSwitchWins) / totalSwitchPlays, 2, 2) + "%";
   let stayRate = nf((100 * totalStayWins) / totalStayPlays, 1, 2) + "%";
-  if (totalSwitchPlays == 0) switchRate = "n/a";
-  if (totalStayPlays == 0) stayRate = "n/a";
+  if (totalSwitchPlays === 0) switchRate = "n/a";
+  if (totalStayPlays === 0) stayRate = "n/a";
 
   resultsP.html(
     `Total Switches:   ${totalSwitchPlays}
@@ -179,8 +187,8 @@ Stay Win Rate:    ${stayRate}`
 
   if (!autoMode) {
     playAgain.style("display", "inline");
-    autoButton.style("display", "inline");
+    autoButton.html("auto run");
   } else {
-    setTimeout(startOver, delay);
+    timeoutid = setTimeout(startOver, delay);
   }
 }
