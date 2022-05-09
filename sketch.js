@@ -8,11 +8,12 @@ let timeoutid;
 
 let resultsP;
 
-let totalSwitchPlays = 0;
-let totalStayPlays = 0;
-
-let totalSwitchWins = 0;
-let totalStayWins = 0;
+let stats = {
+  totalSwitchPlays: 0,
+  totalStayPlays: 0,
+  totalSwitchWins: 0,
+  totalStayWins: 0
+}
 
 let autoMode = false;
 let autoButton;
@@ -68,6 +69,12 @@ function setup() {
   createElement("br");
   autoButton = createButton("auto run");
   autoButton.mousePressed(handleAuto);
+
+  storedstats = getItem("Montey-Hall-stats");
+  if (storedstats) {
+    stats = storedstats;
+    displayStats()
+  }
 }
 
 function handleAuto() {
@@ -120,7 +127,7 @@ function reveal() {
 }
 
 function playerSwitch() {
-  totalSwitchPlays++;
+  stats.totalSwitchPlays++;
 
   let newPick;
   for (let i = 0; i < doors.length; i++) {
@@ -140,13 +147,28 @@ function playerSwitch() {
 }
 
 function playerStay() {
-  totalStayPlays++;
+  stats.totalStayPlays++;
   if (autoMode) {
     outcomeP.html("Stay!");
     timeoutid = setTimeout(() => checkWin(false), delay);
   } else {
     checkWin(false);
   }
+}
+
+function displayStats() {
+  let switchRate = nf((100 * stats.totalSwitchWins) / stats.totalSwitchPlays, 2, 2) + "%";
+  let stayRate = nf((100 * stats.totalStayWins) / stats.totalStayPlays, 1, 2) + "%";
+  if (stats.totalSwitchPlays === 0) switchRate = "n/a";
+  if (stats.totalStayPlays === 0) stayRate = "n/a";
+
+  resultsP.html(
+    `Total Switches:   ${stats.totalSwitchPlays}
+Switch Win Rate:  ${switchRate}
+
+Total Stays:      ${stats.totalStayPlays}
+Stay Win Rate:    ${stayRate}`
+  );
 }
 
 function checkWin(playerSwitch) {
@@ -163,27 +185,15 @@ function checkWin(playerSwitch) {
     pickedDoor.style("background-color", "#AFA");
 
     if (playerSwitch) {
-      totalSwitchWins++;
+      stats.totalSwitchWins++;
     } else {
-      totalStayWins++;
+      stats.totalStayWins++;
     }
   } else {
     outcomeP.html("You lose!");
     pickedDoor.style("background-color", "#FAA");
   }
-
-  let switchRate = nf((100 * totalSwitchWins) / totalSwitchPlays, 2, 2) + "%";
-  let stayRate = nf((100 * totalStayWins) / totalStayPlays, 1, 2) + "%";
-  if (totalSwitchPlays === 0) switchRate = "n/a";
-  if (totalStayPlays === 0) stayRate = "n/a";
-
-  resultsP.html(
-    `Total Switches:   ${totalSwitchPlays}
-Switch Win Rate:  ${switchRate}
-
-Total Stays:      ${totalStayPlays}
-Stay Win Rate:    ${stayRate}`
-  );
+  displayStats();
 
   if (!autoMode) {
     playAgain.style("display", "inline");
@@ -191,4 +201,6 @@ Stay Win Rate:    ${stayRate}`
   } else {
     timeoutid = setTimeout(startOver, delay);
   }
+
+  storeItem("Montey-Hall-stats", stats);
 }
