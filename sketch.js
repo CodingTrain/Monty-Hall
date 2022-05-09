@@ -2,10 +2,11 @@ const doors = [];
 let state = "PICK";
 let pickedDoor;
 let revealedDoor;
+
 let switchButton, stayButton, playAgain;
 let outcomeP;
-
 let resultsP;
+let speedSlider;
 
 let totalSwitchPlays = 0;
 let totalStayPlays = 0;
@@ -15,8 +16,6 @@ let totalStayWins = 0;
 
 let autoMode = false;
 let autoButton;
-
-let delay = 5;
 
 function startOver() {
   for (let door of doors) {
@@ -33,7 +32,7 @@ function startOver() {
 
   if (autoButton) autoButton.hide();
 
-  if (autoMode) setTimeout(pickDoor, delay);
+  if (autoMode) setTimeout(pickDoor, getDelayValue());
 }
 
 function setup() {
@@ -62,15 +61,22 @@ function setup() {
   playAgain.mousePressed(startOver);
   playAgain.hide();
   startOver();
+
+  resultsP = createElement("pre", "");
+
+  createElement("br");
   autoButton = createButton("auto run");
   autoButton.mousePressed(goAuto);
-  resultsP = createElement("pre", "");
+
+  speedSlider = createSlider(20, 1000, 500, 1);
+  speedSlider.hide();
 }
 
 function goAuto() {
   startOver();
   autoMode = true;
   pickDoor();
+  speedSlider.show();
 }
 
 function pickDoor() {
@@ -102,13 +108,17 @@ function reveal() {
 
   if (autoMode) {
     if (random(1) < 0.5) {
-      setTimeout(playerSwitch, delay);
+      setTimeout(playerSwitch, getDelayValue());
     } else {
-      setTimeout(playerStay, delay);
+      setTimeout(playerStay, getDelayValue());
     }
   }
 
   if (!autoMode) outcomeP.html("");
+}
+
+function getDelayValue() {
+  return speedSlider.elt.max - speedSlider.value();
 }
 
 function playerSwitch() {
@@ -124,8 +134,8 @@ function playerSwitch() {
   }
   pickedDoor = newPick;
   if (autoMode) {
-      outcomeP.html("Switch!");
-    setTimeout(() => checkWin(true), delay);
+    outcomeP.html("Switch!");
+    setTimeout(() => checkWin(true), getDelayValue());
   } else {
     checkWin(true);
   }
@@ -134,8 +144,8 @@ function playerSwitch() {
 function playerStay() {
   totalStayPlays++;
   if (autoMode) {
-      outcomeP.html("Stay!");
-    setTimeout(() => checkWin(false), delay);
+    outcomeP.html("Stay!");
+    setTimeout(() => checkWin(false), getDelayValue());
   } else {
     checkWin(false);
   }
@@ -181,6 +191,6 @@ Stay Win Rate:    ${stayRate}`
     playAgain.style("display", "inline");
     autoButton.style("display", "inline");
   } else {
-    setTimeout(startOver, delay);
+    setTimeout(startOver, getDelayValue());
   }
 }
