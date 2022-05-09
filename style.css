@@ -1,0 +1,43 @@
+html,
+body {
+  background-color: #FFF;
+  font-family: 'courier-bold';
+}
+
+p {
+  font-size: 24pt;
+  margin: 10px;
+}
+
+#doors {
+  display: flex;  
+}
+
+button {
+  font-size: 24pt;
+  margin: 10px;
+  display: inline;
+  font-family: 'courier-bold';
+}
+
+pre {
+  margin: 10px;
+  font-size: 18pt;
+}
+
+.outcome {
+  margin: 10px;
+  font-size: 24pt;
+  display: inline;
+}
+
+.door {
+  width: 100px;
+  height: 100px;
+  background-color: #AAA;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 32pt;
+  margin: 10px;
+}
