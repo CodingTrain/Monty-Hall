@@ -1,6 +1,6 @@
 html,
 body {
-  background-color: #FFF;
+  background-color: #fff;
   font-family: 'courier-bold';
 }
 
@@ -10,7 +10,8 @@ p {
 }
 
 #doors {
-  display: flex;  
+  display: flex;
+  flex-wrap: wrap;
 }
 
 button {
@@ -34,7 +35,7 @@ pre {
 .door {
   width: 100px;
   height: 100px;
-  background-color: #AAA;
+  background-color: #aaa;
   display: flex;
   justify-content: center;
   align-items: center;
