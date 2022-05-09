@@ -2,11 +2,13 @@ const doors = [];
 let state = "PICK";
 let pickedDoor;
 let revealedDoor;
+
 let switchButton, stayButton, playAgain;
 let outcomeP;
 let timeoutid;
 
 let resultsP;
+let speedSlider;
 
 let stats = {
   totalSwitchPlays: 0,
@@ -17,8 +19,6 @@ let stats = {
 
 let autoMode = false;
 let autoButton;
-
-let delay = 5;
 
 function startOver() {
   clearTimeout(timeoutid);
@@ -34,7 +34,12 @@ function startOver() {
   state = "PICK";
   outcomeP.html("Pick a Door!");
 
-  if (autoMode) timeoutid = setTimeout(pickDoor, delay);
+  if (autoMode) {
+    timeoutid = setTimeout(pickDoor, getDelayValue());
+    speedSlider.show();
+  } else {
+    speedSlider.hide();
+  }
 }
 
 function setup() {
@@ -62,7 +67,6 @@ function setup() {
   playAgain = createButton("play again");
   playAgain.mousePressed(startOver);
   playAgain.hide();
-  startOver();
 
   resultsP = createElement("pre", "");
 
@@ -75,6 +79,10 @@ function setup() {
     stats = storedstats;
     displayStats()
   }
+
+  speedSlider = createSlider(20, 1000, 500, 1);
+  speedSlider.hide();
+  startOver();
 }
 
 function handleAuto() {
@@ -119,11 +127,17 @@ function reveal() {
     outcomeP.html("");
   } else {
     if (random(1) < 0.5) {
-      timeoutid = setTimeout(playerSwitch, delay);
+      timeoutid = setTimeout(playerSwitch, getDelayValue());
     } else {
-      timeoutid = setTimeout(playerStay, delay);
+      timeoutid = setTimeout(playerStay, getDelayValue());
     }
   }
+
+  if (!autoMode) outcomeP.html("");
+}
+
+function getDelayValue() {
+  return speedSlider.elt.max - speedSlider.value();
 }
 
 function playerSwitch() {
@@ -140,7 +154,7 @@ function playerSwitch() {
   pickedDoor = newPick;
   if (autoMode) {
     outcomeP.html("Switch!");
-    timeoutid = setTimeout(() => checkWin(true), delay);
+    timeoutid = setTimeout(() => checkWin(true), getDelayValue());
   } else {
     checkWin(true);
   }
@@ -150,7 +164,7 @@ function playerStay() {
   stats.totalStayPlays++;
   if (autoMode) {
     outcomeP.html("Stay!");
-    timeoutid = setTimeout(() => checkWin(false), delay);
+    timeoutid = setTimeout(() => checkWin(false), getDelayValue());
   } else {
     checkWin(false);
   }
@@ -199,7 +213,7 @@ function checkWin(playerSwitch) {
     playAgain.style("display", "inline");
     autoButton.html("auto run");
   } else {
-    timeoutid = setTimeout(startOver, delay);
+    timeoutid = setTimeout(startOver, getDelayValue());
   }
 
   storeItem("Montey-Hall-stats", stats);
