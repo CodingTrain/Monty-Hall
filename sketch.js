@@ -140,7 +140,11 @@ function pickDoor() {
       pickedDoor = this;
     }
     pickedDoor.style('background-color', '#AAF');
-    reveal();
+    if (autoMode) {
+      setTimeout(reveal, getDelayValue());
+    } else {
+      reveal();
+    }
   }
 }
 
