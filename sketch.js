@@ -1,269 +1,235 @@
 const doors = [];
-let state = 'PICK';
-let pickedDoor;
-
-let switchButton, stayButton, playAgain;
-let outcomeP;
-let timeoutid;
-
-let resultsP;
-let speedSlider;
 
 let totalDoors = 3;
 
-let stats;
+let state = 'PICK';
+let pickedDoor;
 
 let autoMode = false;
-let autoButton;
+let timeoutId;
+
+let stats = {
+	totalSwitchPlays: 0,
+	totalStayPlays: 0,
+	totalSwitchWins: 0,
+	totalStayWins: 0,
+};
+
+function getDelayValue() {
+	const speedSlider = select('#speed-slider');
+	return speedSlider.elt.max - speedSlider.value();
+}
 
 function clearStats() {
-  stats = {
-    totalSwitchPlays: 0,
-    totalStayPlays: 0,
-    totalSwitchWins: 0,
-    totalStayWins: 0,
-  };
+	stats = {
+		totalSwitchPlays: 0,
+		totalStayPlays: 0,
+		totalSwitchWins: 0,
+		totalStayWins: 0,
+	};
+	clearStorage();
+	updateStats();
 }
 
-function startOver() {
-  clearTimeout(timeoutid);
-  for (let door of doors) {
-    door.prize = '🐐';
-    door.revealed = false;
-    door.html(door.index + 1);
-    door.style('background-color', '#AAA');
-  }
-  const winner = random(doors);
-  winner.prize = '🚂';
-  playAgain.hide();
+function reset() {
+	for (const door of doors) {
+		door.prize = '🐐';
+		door.revealed = false;
+		select('.door', door).html(door.index + 1);
+		door.removeClass('revealed');
+		door.removeClass('picked');
+		door.removeClass('won');
+	}
 
-  state = 'PICK';
-  outcomeP.html('Pick a Door!');
+	const winner = random(doors);
+	winner.prize = '🚂';
 
-  if (autoMode) {
-    timeoutid = setTimeout(pickDoor, getDelayValue());
-    speedSlider.show();
-  } else {
-    speedSlider.hide();
-  }
+	state = 'PICK';
+	select('#instruction > p').html('Pick a Door!')
+	select('#instruction > .choices').hide();
+	select('#instruction > #play-again').hide();
+
+	if (autoMode) {
+		timeoutId = setTimeout(pickDoor, getDelayValue());
+	}
 }
 
-function makeDoors() {
-  // clear array
-  for (let door of doors) {
-    door.remove();
-  }
-  doors.splice(0, doors.length);
-  console.log(doors);
+function updateStats() {
+	const switchWinRate = nf((100 * stats.totalSwitchWins / stats.totalSwitchPlays) || 0, 2, 1) + '%';
+	select('#stats #switches .total').html(stats.totalSwitchPlays);
+	select('#stats #switches .bar').style('width', switchWinRate);
+	select('#stats #switches .bar .win-rate').html(switchWinRate);
 
-  for (let i = 0; i < totalDoors; i++) {
-    doors[i] = createDiv();
-    doors[i].parent('#doors');
-    doors[i].class('door');
-    doors[i].index = i;
-    doors[i].mousePressed(pickDoor);
-  }
+	const stayWinRate = nf((100 * stats.totalStayWins / stats.totalStayPlays) || 0, 2, 1) + '%';
+	select('#stats #stays .total').html(stats.totalStayPlays);
+	select('#stats #stays .bar').style('width', stayWinRate);
+	select('#stats #stays .bar .win-rate').html(stayWinRate);
 }
 
-function setup() {
-  noCanvas();
-  makeDoors();
-  clearStats();
+function checkWin(hasSwitched) {
+	for (const door of doors) {
+		door.addClass('revealed');
+		select('.content', door).html(door.prize);
+	}
 
-  switchButton = createButton('switch');
-  switchButton.mousePressed(playerSwitch);
-  switchButton.hide();
+	if (pickedDoor.prize === '🚂') {
+		pickedDoor.addClass('won');
+		if (hasSwitched) {
+			stats.totalSwitchWins++;
+		} else {
+			stats.totalStayWins++;
+		}
+		select('#instruction > p').html('You win!');
+	} else {
+		select('#instruction > p').html('You lose!');
+	}
 
-  stayButton = createButton('stay');
-  stayButton.mousePressed(playerStay);
-  stayButton.hide();
+	if (autoMode) {
+		timeoutId = setTimeout(reset, getDelayValue());
+	}
+	else {
+		select('#instruction > #play-again').show();
+	}
 
-  outcomeP = createDiv('');
-  outcomeP.class('outcome');
-
-  playAgain = createButton('play again');
-  playAgain.mousePressed(startOver);
-  playAgain.hide();
-
-  resultsP = createElement('pre', '');
-
-  createElement('br');
-  autoButton = createButton('auto run');
-  autoButton.mousePressed(handleAuto);
-
-  storedstats = getItem('Montey-Hall-stats');
-  if (storedstats) {
-    stats = storedstats;
-  }
-  // I think good to always display the stats
-  displayStats();
-
-  speedSlider = createSlider(20, 1000, 500, 1);
-  speedSlider.hide();
-  startOver();
-
-  const totalDoorSelect = createSelect();
-  // Arbitrary set of choices
-  totalDoorSelect.option(3);
-  totalDoorSelect.option(4);
-  totalDoorSelect.option(5);
-  totalDoorSelect.option(10);
-  totalDoorSelect.option(25);
-  totalDoorSelect.option(50);
-  totalDoorSelect.changed(function () {
-    totalDoors = Number(totalDoorSelect.value());
-    makeDoors();
-    clearStorage();
-    clearStats();
-    displayStats();
-    startOver();
-  });
+	updateStats();
+	storeItem('montey-hall-stats', stats);
 }
 
-function handleAuto() {
-  autoMode = !autoMode;
-  if (autoMode) {
-    pickDoor();
-  } else {
-    autoButton.html('auto run');
-  }
-  startOver();
+function chooseDoor(hasSwitched = false) {
+	select('#instruction > .choices').hide();
+
+	if (hasSwitched) {
+		stats.totalSwitchPlays++;
+		const newPick = doors.find((door) => !door.hasClass('revealed') && !door.hasClass('picked'));
+		newPick.addClass('picked');
+		pickedDoor.removeClass('picked');
+		pickedDoor = newPick;
+	}
+	else {
+		stats.totalStayPlays++;
+	}
+
+	if (autoMode) {
+		select('#instruction > p').html(hasSwitched ? 'Switch!' : 'Stay!');
+		timeoutId = setTimeout(() => checkWin(hasSwitched), getDelayValue());
+	} else {
+		checkWin(true);
+	}
+}
+
+function revealDoor() {
+	const options = doors.filter((door, i) => i !== pickedDoor.index && door.prize !== '🚂');
+
+	// The player got the right door!
+	if (options.length === doors.length - 1) {
+		// Randomly remove 1
+		options.splice(floor(random(options.length)), 1);
+	}
+
+	for (const revealedDoor of options) {
+		revealedDoor.addClass('revealed');
+		select('.content', revealedDoor).html(revealedDoor.prize);
+	}
+
+	const lastDoor = doors.find((door) => !door.hasClass('revealed') && !door.hasClass('picked'));
+	select('#instruction > p').html(`Do you want to switch to door #${lastDoor.index + 1}?`);
+
+	if (autoMode) {
+		if (random(1) < 0.5) {
+			timeoutId = setTimeout(() => chooseDoor(true), getDelayValue());
+		} else {
+			timeoutId = setTimeout(() => chooseDoor(false), getDelayValue());
+		}
+	}
+	else {
+		select('#instruction > .choices').show();
+	}
 }
 
 function pickDoor() {
-  if (state === 'PICK') {
-    state = 'REVEAL';
-    if (autoMode) {
-      pickedDoor = random(doors);
-      autoButton.html('stop autorun');
-    } else {
-      pickedDoor = this;
-    }
-    pickedDoor.style('background-color', '#AAF');
-    if (autoMode) {
-      setTimeout(reveal, getDelayValue());
-    } else {
-      reveal();
-    }
-  }
+	if (state !== 'PICK') return;
+	state = 'REVEAL';
+	if (autoMode) {
+		pickedDoor = random(doors);
+	} else {
+		pickedDoor = this;
+	}
+	pickedDoor.addClass('picked');
+	if (autoMode) {
+		setTimeout(revealDoor, getDelayValue());
+	} else {
+		revealDoor();
+	}
 }
 
-function reveal() {
-  const options = [];
-  for (let i = 0; i < doors.length; i++) {
-    const door = doors[i];
-    if (i !== pickedDoor.index && door.prize !== '🚂') {
-      options.push(door);
-    }
-  }
+function makeDoors() {
+	// clear array
+	for (let door of doors) {
+		door.remove();
+	}
+	doors.splice(0, doors.length);
+	console.log(doors);
 
-  // The player got the right door!
-  if (options.length == doors.length - 1) {
-    // Randomly remove 1
-    options.splice(floor(random(options.length)), 1);
-  }
+	for (let i = 0; i < totalDoors; i++) {
+		doors[i] = createDiv();
+		doors[i].parent('#doors');
+		doors[i].class('door-container');
+		if (totalDoors > 10) {
+			doors[i].addClass('small');
+		}
+		doors[i].index = i;
+		doors[i].mousePressed(pickDoor);
 
-  for (let revealedDoor of options) {
-    revealedDoor.revealed = true;
-    revealedDoor.html(revealedDoor.prize);
-  }
+		const door = createDiv();
+		door.class('door');
+		door.parent(doors[i]);
 
-  if (!autoMode) {
-    switchButton.style('display', 'inline');
-    stayButton.style('display', 'inline');
-    outcomeP.html('');
-  } else {
-    if (random(1) < 0.5) {
-      timeoutid = setTimeout(playerSwitch, getDelayValue());
-    } else {
-      timeoutid = setTimeout(playerStay, getDelayValue());
-    }
-  }
-
-  if (!autoMode) outcomeP.html('');
+		const content = createDiv();
+		content.class('content');
+		content.parent(doors[i]);
+	}
 }
 
-function getDelayValue() {
-  return speedSlider.elt.max - speedSlider.value();
-}
+function setup() {
+	noCanvas();
+	stats = getItem('montey-hall-stats') || stats;
+	updateStats();
+	makeDoors();
+	reset();
 
-function playerSwitch() {
-  stats.totalSwitchPlays++;
+	select('#nb-doors').changed(function () {
+		totalDoors = +this.value();
+		makeDoors();
+		reset();
+		clearStats();
+	});
 
-  let newPick;
-  for (let i = 0; i < doors.length; i++) {
-    let door = doors[i];
-    if (door !== pickedDoor && !door.revealed) {
-      newPick = door;
-      break;
-    }
-  }
-  pickedDoor = newPick;
-  if (autoMode) {
-    outcomeP.html('Switch!');
-    timeoutid = setTimeout(() => checkWin(true), getDelayValue());
-  } else {
-    checkWin(true);
-  }
-}
+	select('button#yes').mousePressed(function () {
+		chooseDoor(true);
+	});
 
-function playerStay() {
-  stats.totalStayPlays++;
-  if (autoMode) {
-    outcomeP.html('Stay!');
-    timeoutid = setTimeout(() => checkWin(false), getDelayValue());
-  } else {
-    checkWin(false);
-  }
-}
+	select('button#no').mousePressed(function () {
+		chooseDoor(false);
+	});
 
-function displayStats() {
-  let switchRate =
-    nf((100 * stats.totalSwitchWins) / stats.totalSwitchPlays, 2, 2) + '%';
-  let stayRate =
-    nf((100 * stats.totalStayWins) / stats.totalStayPlays, 1, 2) + '%';
-  if (stats.totalSwitchPlays === 0) switchRate = 'n/a';
-  if (stats.totalStayPlays === 0) stayRate = 'n/a';
+	select('button#play-again').mousePressed(function () {
+		reset();
+	});
 
-  resultsP.html(
-    `Total Switches:   ${stats.totalSwitchPlays}
-Switch Win Rate:  ${switchRate}
+	select('button#autorun').mousePressed(function () {
+		autoMode = !autoMode;
+		if (autoMode) {
+			this.addClass('on');
+			pickDoor();
+			select('#speed-slider').show();
+		}
+		else {
+			clearTimeout(timeoutId);
+			this.removeClass('on');
+			select('#speed-slider').hide();
+			reset();
+		}
+	});
+	select('#speed-slider').hide();
 
-Total Stays:      ${stats.totalStayPlays}
-Stay Win Rate:    ${stayRate}`
-  );
-}
-
-function checkWin(playerSwitch) {
-  switchButton.hide();
-  stayButton.hide();
-
-  for (let door of doors) {
-    door.html(door.prize);
-    door.style('background-color', '#AAA');
-  }
-
-  if (pickedDoor.prize === '🚂') {
-    outcomeP.html('You win!');
-    pickedDoor.style('background-color', '#AFA');
-
-    if (playerSwitch) {
-      stats.totalSwitchWins++;
-    } else {
-      stats.totalStayWins++;
-    }
-  } else {
-    outcomeP.html('You lose!');
-    pickedDoor.style('background-color', '#FAA');
-  }
-  displayStats();
-
-  if (!autoMode) {
-    playAgain.style('display', 'inline');
-    autoButton.html('auto run');
-  } else {
-    timeoutid = setTimeout(startOver, getDelayValue());
-  }
-
-  storeItem('Montey-Hall-stats', stats);
 }
