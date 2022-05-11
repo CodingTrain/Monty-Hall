@@ -160,7 +160,7 @@ function reveal() {
   // The player got the right door!
   if (options.length == doors.length - 1) {
     // Randomly remove 1
-    options.splice(floor(random(options.length), 1));
+    options.splice(floor(random(options.length)), 1);
   }
 
   for (let revealedDoor of options) {
