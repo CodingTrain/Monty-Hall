@@ -100,6 +100,9 @@ function setup() {
 
   speedSlider = createSlider(20, 1000, 500, 1);
   speedSlider.hide();
+  speedSliderLabel = createP("TurboMode");
+  speedSliderLabel.hide();
+  speedSliderLabel.style('font-size', '16px');
   startOver();
 
   const totalDoorSelect = createSelect();
@@ -124,8 +127,10 @@ function handleAuto() {
   autoMode = !autoMode;
   if (autoMode) {
     pickDoor();
+    speedSliderLabel.show();
   } else {
     autoButton.html('auto run');
+    speedSliderLabel.hide();
   }
   startOver();
 }
