@@ -115,7 +115,7 @@ function chooseDoor(hasSwitched = false) {
     select('#instruction > p').html(hasSwitched ? 'Switch!' : 'Stay!');
     timeoutId = setTimeout(() => checkWin(hasSwitched), getDelayValue());
   } else {
-    checkWin(true);
+    checkWin(hasSwitched);
   }
 }
 
