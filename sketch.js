@@ -227,6 +227,7 @@ function setup() {
     autoMode = !autoMode;
     if (autoMode) {
       this.addClass('on');
+      reset();
       pickDoor();
       select('#speed-slider').show();
     } else {
